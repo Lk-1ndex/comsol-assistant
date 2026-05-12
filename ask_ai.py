@@ -32,18 +32,32 @@ def ask(question):
 
 如果参考资料不足，再根据自己的知识补充。"""
 
-    response = requests.post(
-        "https://api.deepseek.com/chat/completions",
-        headers={"Authorization": f"Bearer {API_KEY}"},
-        json={
-            "model": "deepseek-chat",
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": question}
-            ]
-        }
-    )
-    return response.json()["choices"][0]["message"]["content"]
+    try:
+        response = requests.post(
+            "https://api.deepseek.com/chat/completions",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+            json={
+                "model": "deepseek-chat",
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": question}
+                ]
+            },
+            timeout=30
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+
+    except requests.exceptions.Timeout:
+        return "请求超时，请检查网络连接后重试。"
+    except requests.exceptions.ConnectionError:
+        return "网络连接失败，请检查网络后重试。"
+    except requests.exceptions.HTTPError as e:
+        return f"API请求失败：{e}"
+    except KeyError:
+        return "API返回格式异常，请稍后重试。"
+    except Exception as e:
+        return f"发生未知错误：{e}"
 
 print("COMSOL 助手已启动（RAG版）")
 while True:
